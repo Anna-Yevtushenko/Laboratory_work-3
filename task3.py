@@ -17,7 +17,10 @@ ratings_matrix = ratings.pivot(index='userId', columns='movieId', values='rating
 ratings_matrix = ratings_matrix.dropna(thresh=10, axis=0)  # Користувачі, що оцінили менше 10 фільмів
 ratings_matrix = ratings_matrix.dropna(thresh=20, axis=1)  # Фільми, що мають менше 20 оцінок
 
+# Заповнення відсутніх значень
 ratings_matrix_filled = ratings_matrix.fillna(2.5)
+
+# Перетворення на масив NumPy
 R = ratings_matrix_filled.values
 user_ratings_mean = np.mean(R, axis=1)
 R_demeaned = R - user_ratings_mean.reshape(-1, 1)
@@ -35,12 +38,14 @@ preds_df = pd.DataFrame(all_user_predicted_ratings, columns=ratings_matrix.colum
 # Вибір перших 10 стовпців для виведення
 selected_columns = ratings_matrix.columns[:10]
 
+# Виведення даних до прогнозування
 print("Дані до прогнозування:")
 print(ratings_matrix[selected_columns].head(10))
 
-
+# Виведення даних після прогнозування
 print("\nДані після прогнозування:")
 print(preds_df[selected_columns].head(10))
+
 
 preds_only_df = preds_df.mask(~ratings_matrix.isna())
 print("\nТільки прогнозовані дані:")
@@ -48,4 +53,27 @@ print(preds_only_df[selected_columns].head(10))
 
 
 
+def recommend_movies(predictions_df, userID, movies_df, original_ratings_df, num_recommendations=10):
+    user_row_number = userID - 1  # userId починається з 1, а індексація в DataFrame з 0
+    sorted_user_predictions = predictions_df.iloc[user_row_number].sort_values(ascending=False).reset_index()
+    sorted_user_predictions.columns = ['movieId', 'Predictions']
+    # Фільми, які користувач вже оцінив
+    user_data = original_ratings_df[original_ratings_df.userId == userID]
+    user_full = user_data.merge(movies_df, how='left', on='movieId').sort_values(['rating'], ascending=False)
+
+    # Рекомендації
+    recommendations = movies_df[~movies_df['movieId'].isin(user_full['movieId'])]
+    recommendations = recommendations.merge(sorted_user_predictions, how='left', on='movieId')
+    recommendations = recommendations.sort_values('Predictions', ascending=False)
+    return user_full, recommendations.head(num_recommendations)
+
+
+# Отримання рекомендацій для користувача з ID = 1
+already_rated, predictions = recommend_movies(preds_df, 1, movies, ratings, 10)
+
+print("ID рекомендованих фільмів:")
+print(predictions['movieId'].values)
+
+print("\n\nНазви рекомендованих фільмів:")
+print(predictions[['title', 'genres']])
 
