@@ -45,8 +45,11 @@ else:
         fig = plt.figure(figsize=(14, 6))
 
         ax = fig.add_subplot(121, projection='3d')
+
+
         ax.scatter(user_factors['Feature_1'][:15], user_factors['Feature_2'][:15], user_factors['Feature_3'][:15],
                    c='r', label='Users')
+
         ax.set_title('Users in 3D space')
 
         ax.legend()

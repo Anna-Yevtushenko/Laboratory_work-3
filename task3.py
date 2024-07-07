@@ -55,25 +55,27 @@ print(preds_only_df[selected_columns].head(10))
 
 def recommend_movies(predictions_df, userID, movies_df, original_ratings_df, num_recommendations=10):
     user_row_number = userID - 1  # userId починається з 1, а індексація в DataFrame з 0
-    sorted_user_predictions = predictions_df.iloc[user_row_number].sort_values(ascending=False).reset_index()
-    sorted_user_predictions.columns = ['movieId', 'Predictions']
+    sorted_user_predictions = predictions_df.iloc[user_row_number].sort_values(ascending=False)
+
     # Фільми, які користувач вже оцінив
     user_data = original_ratings_df[original_ratings_df.userId == userID]
     user_full = user_data.merge(movies_df, how='left', on='movieId').sort_values(['rating'], ascending=False)
 
     # Рекомендації
     recommendations = movies_df[~movies_df['movieId'].isin(user_full['movieId'])]
-    recommendations = recommendations.merge(sorted_user_predictions, how='left', on='movieId')
-    recommendations = recommendations.sort_values('Predictions', ascending=False)
+    recommendations = recommendations.merge(pd.DataFrame(sorted_user_predictions).reset_index(), how='left', on='movieId')
+    recommendations = recommendations.rename(columns={user_row_number + 1: 'Predictions'}).sort_values('Predictions', ascending=False)
+
     return user_full, recommendations.head(num_recommendations)
 
-
-# Отримання рекомендацій для користувача з ID = 1
 already_rated, predictions = recommend_movies(preds_df, 1, movies, ratings, 10)
+
+predictions = predictions.reset_index(drop=True)
+predictions.index = np.arange(1, len(predictions) + 1)
 
 print("ID рекомендованих фільмів:")
 print(predictions['movieId'].values)
 
-print("\n\nНазви рекомендованих фільмів:")
+print("\nНазви рекомендованих фільмів:")
 print(predictions[['title', 'genres']])
 
